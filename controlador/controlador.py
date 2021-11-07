@@ -4,12 +4,11 @@ import threading
 
 
 class Server:
-    def __init__(self, host='localhost', port=3000, cn=2):
+    def __init__(self, host='localhost', port=3000, cn=10):
         self._lst_clientes = []
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.bind( (host, port))
         self._sock.listen(cn)
-        # self._sock.setblocking(False)
         self._serve = threading.Thread(target=self.serve)
         self._serve.daemon = True
         self._serve.start()
@@ -19,25 +18,30 @@ class Server:
         while True:
             command = input('-> ')
             if command == 'salir':
-                for c in self._lst_clientes:
-                    print(c)
-                    c.close()
+                if len(self._lst_clientes) > 0: # si hay clientes activos
+                    for c in self._lst_clientes:
+                        print(c)
+                        print(f'cerrando la conexion con el cliente {c}')
+                        c.close()
                 sys.exit()
 
     def serve(self):
+        print('Esperando conexiones!')
         while True:
-            conn, addr = self._sock.accept()
-            # conn.setblocking(False)sa
-            self._lst_clientes.append(conn)
+            cliente, addr = self._sock.accept()
+            self._lst_clientes.append(cliente)
             print(f'cliente conectado desde: {addr}')
-            self.listen(conn) # listen_to_all y hacerlo thread!!!
+            print(cliente)
+            cc = threading.Thread(target=self.listen, args=(cliente, ))
+            cc.daemon = True
+            cc.start()
 
     def listen(self, client):
-        packet = client.recv(1024)
-        if packet:
-            print(packet.decode('utf-8'))
-            self.send(client, 'ok')
-        # self._sock.close()
+        while True:
+            packet = client.recv(1024)
+            if packet:
+                print(packet.decode('utf-8'))
+                self.send(client, 'ok')
 
     def send(self, client, msg):
         packet = msg.encode('utf-8')
