@@ -32,6 +32,7 @@ class Server:
             self._lst_clientes.append(cliente)
             print(f'cliente conectado desde: {addr}')
             print(cliente)
+            # un thread para escuchar al cliente
             cc = threading.Thread(target=self.listen, args=(cliente, ))
             cc.daemon = True
             cc.start()
