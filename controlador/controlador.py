@@ -41,11 +41,16 @@ class Server:
         while True:
             packet = client.recv(1024)
             if packet:
-                print(packet.decode('utf-8'))
-                self.send(client, 'ok')
+                data = packet.decode('utf-8')
+                nombre = data[:10]
+                mensaje = data[10:]
+                print(str(nombre).rstrip() + ': ' + str(mensaje))
+                self.send(client, 'hola!')
 
     def send(self, client, msg):
-        packet = msg.encode('utf-8')
+        nombre = 'Pablo     '
+        data = nombre + msg
+        packet = data.encode('utf-8')
         client.send(packet)
 
 
