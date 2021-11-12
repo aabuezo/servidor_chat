@@ -38,20 +38,36 @@ class Server:
             cc.start()
 
     def listen(self, client):
+        estado = 0
         while True:
             packet = client.recv(1024)
             if packet:
                 data = packet.decode('utf-8')
-                nombre = data[:10]
-                mensaje = data[10:]
-                print(str(nombre).rstrip() + ': ' + str(mensaje))
-                self.send(client, 'hola!')
+                respuesta = self.responder(client, estado, data)
+                estado += 1
 
     def send(self, client, msg):
-        nombre = 'Pablo     '
+        nombre = 'Catalina  '
         data = nombre + msg
         packet = data.encode('utf-8')
         client.send(packet)
+
+    def responder(self, cliente, estado, data):
+        respuesta = ''
+        opcion = 0
+        turno = 0
+        nombre = data[:10]
+        mensaje = data[10:]
+        print(str(nombre).rstrip() + ': ' + str(mensaje))
+        if estado == 0:
+            respuesta = 'Bienvenido al sistema de turnos!\nMi nombre es Catalina, por favor, elija la opcion que desea:\n' + '1. Oftalmologia\n' + '2. Pediatría\n' + '3. Obstetricia\n' + '4. Ginecología'
+        elif estado == 1:   # respondio la opcion
+            opcion = mensaje[0]
+            respuesta = 'Elija su turno:\n1. Lunes\n2. Martes\n3. Miércoles\n4. Jueves\n5. Viernes\n'
+        elif estado == 2:   # responde el turno
+            turno = mensaje[0]
+            respuesta = f'Le confirmo su turno de {opcion} para el dia {turno}\n'
+        self.send(cliente, respuesta)
 
 
 if __name__ == '__main__':
