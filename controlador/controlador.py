@@ -63,10 +63,10 @@ class Server:
         nombre = str(data[:10]).strip()
         mensaje = data[10:]
         print(str(nombre).rstrip() + ': ' + str(mensaje))
-        if estado == 0:
+        if estado == 0:     # estado=0 muestro el menu principal
             respuesta = self.menu_especialidades()
             estado += 1
-        elif estado == 1:   # ya respondio la opcion
+        elif estado == 1:   # estado=1 elige la especialidad
             opcion = int(mensaje)
             print(especialidades_dict.keys())
             if opcion in especialidades_dict.keys():
@@ -75,7 +75,7 @@ class Server:
                 estado += 1
             else:
                 respuesta = 'Opción inválida. Ingrese su opcion nuevamente'
-        elif estado == 2:   # ya respondio el turno
+        elif estado == 2:   # estado=2 elige el turno
             turno = int(mensaje)
             if turno in turnos_dict.keys():
                 self.turno = turnos_dict[turno]
@@ -91,6 +91,7 @@ class Server:
         cliente.send(packet)
         return estado
 
+    # ver de usar un decorador aqui
     def menu_especialidades(self):
         menu = 'Bienvenido al sistema de turnos_dict\n'
         menu += 'Por favor, elija el número de opcion que desea:\n' \
@@ -100,6 +101,7 @@ class Server:
                 + f'4. {especialidades_dict[4]}'
         return menu
 
+    # ver de usar un decorador aqui
     def menu_turnos(self):
         menu = 'Elija su turno:\n'
         menu += '1. Lunes\n2. Martes\n3. Miércoles\n4. Jueves\n5. Viernes'

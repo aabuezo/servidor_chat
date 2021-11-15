@@ -1,7 +1,7 @@
-from peewee import SqliteDatabase, DateTimeField, Model, CharField, ForeignKeyField, BooleanField
-from datetime import date, datetime
+from peewee import DateTimeField, Model, CharField, ForeignKeyField, BooleanField, SqliteDatabase
+from datetime import datetime
 
-db = SqliteDatabase('../database/data.db')
+base_turnos = SqliteDatabase('database/base_turnos.db')
 
 lst_pacientes = ['Alejandro', 'Juan', 'Luis']
 
@@ -9,7 +9,9 @@ especialidades_dict = {
     1: 'Obstetricia',
     2: 'Oftalmologia',
     3: 'Pediatría',
-    4: 'Clínica Médica'
+    4: 'Clínica Médica',
+    5: 'Cirugia Cardiovascular',
+    6: 'Rayos X'
 }
 
 turnos_dict = {
@@ -24,7 +26,8 @@ turnos_dict = {
 class TablaBase(Model):
     timestamp = DateTimeField(default=datetime.now)
     class Meta:
-        database = db
+        database = base_turnos
+
 
 class Paciente(TablaBase):
     paciente = CharField(null=False)
@@ -64,14 +67,23 @@ def carga_inicial_datos():
 
 
 def crear_turno(turno):
-    with db.atomic():
+    with base_turnos.atomic():
         turno.save()
 
 
-if __name__ == '__main__':
-    db.connect()
-    db.create_tables([Paciente, Especialidad, TurnoDisponible, NuevoTurno])
+def crear_database():
+    base = base_turnos
+    print("abriendo la conexion a la base de datos")
+    base.connect()
+    print("conectado a la base de datos")
+    base.create_tables([Paciente, Especialidad, TurnoDisponible, NuevoTurno])
+    print("tablas creadas")
     carga_inicial_datos()
-    db.close()
+    print("datos iniciales cargados")
+    base.close()
+    print("base de datos cerrada")
+
+
+if __name__ == '__main__':
+    crear_database()
     # nuevo_turno = NuevoTurno(paciente='Alejandro', especialidad=especialidades_dict['2'], turno=turnos_dict['1'])
-    # crear_turno(nuevo_turno)
