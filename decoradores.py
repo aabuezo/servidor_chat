@@ -1,10 +1,10 @@
 
 
 def log(funcion):
-    def guardar_archivo_logs(*args, **kwargs):
-        mi_print(*args, **kwargs)
+    def guardar_archivo_logs(*args):
+        mi_print(*args)
         file = open("logs.txt", "a")
-        file.write(*args, **kwargs)
+        file.write(*args)
         file.close()
     return guardar_archivo_logs
 
