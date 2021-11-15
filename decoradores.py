@@ -2,7 +2,7 @@
 
 def log(funcion):
     def guardar_archivo_logs(*args):
-        mi_print(*args)
+        funcion(*args)
         file = open("logs.txt", "a")
         file.write(*args)
         file.close()
