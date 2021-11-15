@@ -1,12 +1,12 @@
 import socket
 import sys
 import threading
-from modelo.modelo import especialidades, turnos
+from modelo.modelo import especialidades_dict, turnos_dict
 
 
 class Server:
-    def __init__(self, host='localhost', port=4000, cn=10):
-        self.nombre = 'Catalina  '
+    def __init__(self, host='localhost', port=3000, cn=10):
+        self.nombre = 'Clínica   '
         self._lst_clientes = []
         self.turno = ''
         self.especialidad = ''
@@ -20,6 +20,7 @@ class Server:
 
     def consola(self):
         while True:
+            print('Ingrese "salir" para finalizar.\n')
             command = input('-> ')
             if command == 'salir':
                 if len(self._lst_clientes) > 0: # si hay clientes activos
@@ -30,8 +31,7 @@ class Server:
                 sys.exit()
 
     def atender(self):
-        print('Esperando conexiones!')
-        print('Ingrese "salir" para finalizar')
+        print('Esperando conexiones entrantes...\n')
         while True:
             cliente, addr = self._sock.accept()
             self._lst_clientes.append(cliente)
@@ -60,40 +60,44 @@ class Server:
     def responder(self, cliente, estado, data):
         respuesta = ''
         opcion = ''
-        nombre = data[:10]
-        mensaje = data[10]
+        nombre = str(data[:10]).strip()
+        mensaje = data[10:]
         print(str(nombre).rstrip() + ': ' + str(mensaje))
         if estado == 0:
             respuesta = self.menu_especialidades()
             estado += 1
         elif estado == 1:   # ya respondio la opcion
-            opcion = mensaje
-            if opcion in especialidades.keys():
-                self.especialidad = especialidades[opcion]
+            opcion = int(mensaje)
+            print(especialidades_dict.keys())
+            if opcion in especialidades_dict.keys():
+                self.especialidad = especialidades_dict[opcion]
                 respuesta = self.menu_turnos()
                 estado += 1
             else:
-                respuesta = 'Ingrese su opcion nuevamente'
+                respuesta = 'Opción inválida. Ingrese su opcion nuevamente'
         elif estado == 2:   # ya respondio el turno
-            turno = mensaje
-            if turno in turnos.keys():
-                self.turno = turnos[turno]
-                respuesta = f'Le confirmamos su turno de {self.especialidad} para el dia {self.turno}!\nAdiós!'
+            turno = int(mensaje)
+            if turno in turnos_dict.keys():
+                self.turno = turnos_dict[turno]
+                respuesta = f'Le confirmamos su turno:\n' \
+                            + f'Paciente: {nombre}\n' \
+                            + f'Especialidad: {self.especialidad}\n' \
+                            + f'Dia: {self.turno}\n\nLo esperamos!'
                 estado += 1
             else:
-                respuesta = 'Ingrese su opcion nuevamente'
+                respuesta = 'Opción inválida. Ingrese su opcion nuevamente'
         data = self.nombre + respuesta
         packet = data.encode('utf-8')
         cliente.send(packet)
         return estado
 
     def menu_especialidades(self):
-        menu = 'Bienvenido al sistema de turnos!\n'
-        menu += 'Mi nombre es Catalina, por favor, elija la opcion que desea:\n' \
-                + f'1. {especialidades["1"]}\n' \
-                + f'2. {especialidades["2"]}\n' \
-                + f'3. {especialidades["3"]}\n' \
-                + f'4. {especialidades["4"]}'
+        menu = 'Bienvenido al sistema de turnos_dict\n'
+        menu += 'Por favor, elija el número de opcion que desea:\n' \
+                + f'1. {especialidades_dict[1]}\n' \
+                + f'2. {especialidades_dict[2]}\n' \
+                + f'3. {especialidades_dict[3]}\n' \
+                + f'4. {especialidades_dict[4]}'
         return menu
 
     def menu_turnos(self):
