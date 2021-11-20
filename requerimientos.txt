@@ -1,1 +1,3 @@
-peewee
+instalar: peewee
+crear carpeta: database
+crear carpeta: logfiles
