@@ -1,12 +1,12 @@
 import socket
 import sys
 import threading
-from modelo.modelo import especialidades_dict, turnos_dict
+from modelo.modelo import especialidades_dict, turnos_dict, TurnoDisponible, Especialidad, NuevoTurno, Paciente
 from decoradores import printlog
 
 
 class Server:
-    def __init__(self, host='localhost', port=3000, cn=10):
+    def __init__(self, host='localhost', port=6003, cn=10):
         self.nombre = 'Clínica   '
         self._lst_clientes = []
         self.turno = ''
@@ -23,7 +23,7 @@ class Server:
         while True:
             print('Ingrese "salir" para finalizar.\n')
             command = input('-> ')
-            if command == 'salir':
+            if command.lower() == 'salir':
                 if len(self._lst_clientes) > 0: # si hay clientes activos
                     for c in self._lst_clientes:
                         printlog(c, False)  # no imprime a la pantalla, pero si al log.txt
@@ -32,7 +32,8 @@ class Server:
                 sys.exit()
 
     def atender(self):
-        printlog('Esperando conexiones entrantes...\n')
+        printlog('Esperando conexiones entrantes...')
+        print('\n')
         while True:
             cliente, addr = self._sock.accept()
             self._lst_clientes.append(cliente)
@@ -60,53 +61,80 @@ class Server:
 
     def responder(self, cliente, estado, data):
         respuesta = ''
-        opcion = ''
         nombre = str(data[:10]).strip()
         mensaje = data[10:]
         printlog(str(nombre).rstrip() + ': ' + str(mensaje))
-        if estado == 0:     # estado=0 muestro el menu principal
+        if estado == 0:     # estado=0 muestra el menu principal
             respuesta = self.menu_especialidades()
             estado += 1
         elif estado == 1:   # estado=1 elige la especialidad
             opcion = int(mensaje)
-            printlog(especialidades_dict.keys())
-            if opcion in especialidades_dict.keys():
-                self.especialidad = especialidades_dict[opcion]
-                respuesta = self.menu_turnos()
-                estado += 1
-            else:
-                respuesta = 'Opción inválida. Ingrese su opcion nuevamente'
+            estado, respuesta = self.elegir_especialidad(estado, opcion)
         elif estado == 2:   # estado=2 elige el turno
-            turno = int(mensaje)
-            if turno in turnos_dict.keys():
-                self.turno = turnos_dict[turno]
+            opcion = int(mensaje)
+            estado, respuesta = self.elegir_turno(estado, opcion, nombre)
+
+        self.enviar_respuesta(cliente, respuesta)
+        return estado
+
+    def menu_especialidades(self):
+        especialidades = Especialidad()
+        menu = 'Bienvenido al sistema de turnos_dict\n'
+        menu += 'Por favor, elija el número de opcion que desea:\n'
+        menu += especialidades.get_lista_especialidades()
+        return menu
+
+    def menu_turnos(self):
+        turnos = TurnoDisponible()
+        menu = 'Elija su turno:\n'
+        menu += turnos.get_turnos_disponibles()
+        return menu
+
+    def elegir_especialidad(self, estado, opcion):
+        esp = Especialidad()
+        esp_ids = esp.get_lista_ids()
+        printlog(esp_ids)
+        if opcion in esp_ids:
+            self.especialidad = esp.get_especialidad(opcion)
+            respuesta = self.menu_turnos()
+            estado += 1
+        else:
+            respuesta = 'Opción inválida.\nIngrese su opcion nuevamente'
+        return (estado, respuesta)
+
+    def elegir_turno(self, estado, opcion, nombre):
+        td = TurnoDisponible()
+        turnos_ids = td.get_lista_ids()
+        printlog(turnos_ids)
+        if opcion in turnos_ids:
+            self.turno = td.get_turno(opcion)
+            if self.reservar_turno(nombre) == True:
                 respuesta = f'Le confirmamos su turno:\n' \
                             + f'Paciente: {nombre}\n' \
                             + f'Especialidad: {self.especialidad}\n' \
                             + f'Dia: {self.turno}\n\nLo esperamos!'
                 estado += 1
             else:
-                respuesta = 'Opción inválida. Ingrese su opcion nuevamente'
+                respuesta = f'El turno ya no esta disponible'
+        else:
+            respuesta = 'Opción inválida.\nIngrese su opcion nuevamente'
+        return (estado, respuesta)
+
+    def reservar_turno(self, nombre):
+        esp = Especialidad()
+        pac = Paciente()
+        tur = TurnoDisponible()
+        nombre_id = pac.get_id(nombre)
+        esp_id = esp.get_id(self.especialidad)
+        turno_id = tur.get_id(self.turno)
+        nt = NuevoTurno()
+        nt.guardar_turno(nombre_id, esp_id, turno_id)
+        return True
+
+    def enviar_respuesta(self, cliente, respuesta):
         data = self.nombre + respuesta
         packet = data.encode('utf-8')
         cliente.send(packet)
-        return estado
-
-    # ver de usar un decorador aqui
-    def menu_especialidades(self):
-        menu = 'Bienvenido al sistema de turnos_dict\n'
-        menu += 'Por favor, elija el número de opcion que desea:\n' \
-                + f'1. {especialidades_dict[1]}\n' \
-                + f'2. {especialidades_dict[2]}\n' \
-                + f'3. {especialidades_dict[3]}\n' \
-                + f'4. {especialidades_dict[4]}'
-        return menu
-
-    # ver de usar un decorador aqui
-    def menu_turnos(self):
-        menu = 'Elija su turno:\n'
-        menu += '1. Lunes\n2. Martes\n3. Miércoles\n4. Jueves\n5. Viernes'
-        return menu
 
 
 if __name__ == '__main__':

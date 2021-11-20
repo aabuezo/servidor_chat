@@ -1,11 +1,11 @@
-from peewee import DateTimeField, Model, CharField, ForeignKeyField, BooleanField, SqliteDatabase
+from modelo.datos_base import DATABASE, LISTA_PACIENTES, LISTA_ESPECIALIDADES, LISTA_DIAS_TURNOS
+from peewee import DateTimeField, Model, CharField, ForeignKeyField, BooleanField
 from datetime import datetime
+from decoradores import printlog
 
-base_turnos = SqliteDatabase('database/base_turnos.db')
-
-lst_pacientes = ['Alejandro', 'Juan', 'Luis']
-
-especialidades_dict = {
+especialidades_dict = {}
+turnos_dict = {}
+especialidades_dict_orig = {
     1: 'Obstetricia',
     2: 'Oftalmologia',
     3: 'Pediatría',
@@ -14,7 +14,7 @@ especialidades_dict = {
     6: 'Rayos X'
 }
 
-turnos_dict = {
+turnos_dict_orig = {
     1: 'Lunes',
     2: 'Martes',
     3: 'Miércoles',
@@ -22,24 +22,44 @@ turnos_dict = {
     5: 'Viernes'
 }
 
-turnos_disponibles = {}
-
 
 class TablaBase(Model):
     timestamp = DateTimeField(default=datetime.now)
     class Meta:
-        database = base_turnos
+        database = DATABASE
 
 
 class Paciente(TablaBase):
     paciente = CharField(null=False)
 
+    def get_id(self, nombre):
+        return Paciente.get(Paciente.paciente == nombre).id
+
 
 class Especialidad(TablaBase):
     especialidad = CharField(null=False)
 
-    def get_especialidades(self):
-        pass
+    def get_lista_especialidades(self):
+        query = Especialidad().select()
+        especialidades = ''
+        for registro in query:
+            especialidades += f'{registro.id}. {registro.especialidad}\n'
+        return especialidades
+
+    def get_lista_ids(self):
+        query = Especialidad().select()
+        lst_esp = []
+        for registro in query:
+            lst_esp.append(registro.id)
+        return lst_esp
+
+    def get_especialidad(self, id):
+        # query = Especialidad().select().where(id==id)
+        # print(query)
+        return Especialidad.get_by_id(id).especialidad
+
+    def get_id(self, esp):
+        return Especialidad.get(Especialidad.especialidad == esp).id
 
 
 class TurnoDisponible(TablaBase):
@@ -47,8 +67,26 @@ class TurnoDisponible(TablaBase):
     disponible = BooleanField(default=True)
 
     def get_turnos_disponibles(self):
-        pass
+        query = TurnoDisponible().select().where(TurnoDisponible.disponible==True)
+        turnos = ''
+        for registro in query:
+            turnos += f'{registro.id}. {registro.turno}\n'
+        return turnos
 
+    def get_lista_ids(self):
+        query = TurnoDisponible().select().where(TurnoDisponible.disponible == True)
+        lst_turnos = []
+        for registro in query:
+            lst_turnos.append(registro.id)
+        return lst_turnos
+
+    def get_turno(self, id):
+        # query = TurnoDisponible().select().where(id==id)
+        # return query.turno
+        return TurnoDisponible.get_by_id(id).turno
+
+    def get_id(self, dia):
+        return TurnoDisponible.get(TurnoDisponible.turno == dia).id
 
 
 class NuevoTurno(TablaBase):
@@ -56,42 +94,34 @@ class NuevoTurno(TablaBase):
     especialidad = ForeignKeyField(Especialidad, backref='especialidad_id')
     turno = ForeignKeyField(TurnoDisponible, backref='turno_id')
 
+    def guardar_turno(self, nombre_id, especialidad_id, turno_id):
+        nt = NuevoTurno.create(paciente=nombre_id, especialidad=especialidad_id, turno=turno_id)
+        # td = TurnoDisponible()
+        query = TurnoDisponible.update(disponible=False).where(TurnoDisponible.id == turno_id)
+        printlog(query)
+        query.execute()
+
 
 def carga_inicial_datos():
-    for value in lst_pacientes:
-        paciente = Paciente.create(paciente=value)
-        paciente.save()
-    for value in especialidades_dict.values():
-        especialidad = Especialidad.create(especialidad=value)
-        especialidad.save()
-    for value in turnos_dict.values():
-        turno_disponible = TurnoDisponible.create(turno=value)
-        turno_disponible.save()
-
-
-def crear_turno(turno):
-    with base_turnos.atomic():
-        turno.save()
-
-
-def test_turnos():
-    t = TurnoDisponible()
-    t.get_turnos_disponibles()
+    with DATABASE.atomic():
+        for value in LISTA_PACIENTES:
+            Paciente.create(paciente=value).save()
+        for value in LISTA_ESPECIALIDADES:
+            Especialidad.create(especialidad=value).save()
+        for value in LISTA_DIAS_TURNOS:
+            TurnoDisponible.create(turno=value).save()
 
 
 def crear_database():
-    base = base_turnos
-    print("abriendo la conexion a la base de datos")
-    base.connect()
-    print("conectado a la base de datos")
-    base.create_tables([Paciente, Especialidad, TurnoDisponible, NuevoTurno])
-    print("tablas creadas")
-    carga_inicial_datos()
-    print("datos iniciales cargados")
-    base.close()
-    print("base de datos cerrada")
+    with DATABASE:
+        printlog("conectado a la base de datos", False)
+        DATABASE.create_tables([Paciente, Especialidad, TurnoDisponible, NuevoTurno])
+        printlog("tablas creadas", False)
+        carga_inicial_datos()
+        printlog("datos iniciales cargados", False)
 
 
 if __name__ == '__main__':
-    # crear_database()
-    test_turnos()
+    pass
+
+
