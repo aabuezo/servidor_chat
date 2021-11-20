@@ -1,3 +1,5 @@
 instalar: peewee
 crear carpeta: database
 crear carpeta: logfiles
+
+ejecutar con: python main.py
