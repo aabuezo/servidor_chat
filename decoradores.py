@@ -1,17 +1,17 @@
 
 
-def log(funcion):
+def log_to_file(funcion):
     def guardar_archivo_logs(*args):
         funcion(*args)
-        file = open("logs.txt", "a")
-        file.write(*args)
-        file.close()
+        with open("logfiles/logs.txt", "a") as f:
+            f.write(str(args))
+            f.write('\n')
     return guardar_archivo_logs
 
 
-@log
-def mi_print(info):
-    print(info)
+@log_to_file
+def printlog(info, to_screen=True):
+    if to_screen:
+        print(str(info))
 
 
-mi_print("hola mundo!")

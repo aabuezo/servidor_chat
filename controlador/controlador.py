@@ -2,6 +2,7 @@ import socket
 import sys
 import threading
 from modelo.modelo import especialidades_dict, turnos_dict
+from decoradores import printlog
 
 
 class Server:
@@ -25,18 +26,18 @@ class Server:
             if command == 'salir':
                 if len(self._lst_clientes) > 0: # si hay clientes activos
                     for c in self._lst_clientes:
-                        print(c)
-                        print(f'cerrando la conexion con el cliente {c}')
+                        printlog(c, False)  # no imprime a la pantalla, pero si al log.txt
+                        printlog(f'cerrando la conexion con el cliente {c}')
                         c.close()
                 sys.exit()
 
     def atender(self):
-        print('Esperando conexiones entrantes...\n')
+        printlog('Esperando conexiones entrantes...\n')
         while True:
             cliente, addr = self._sock.accept()
             self._lst_clientes.append(cliente)
-            print(f'cliente conectado desde: {addr}')
-            print(cliente)
+            printlog(f'cliente conectado desde: {addr}')
+            printlog(cliente)
             # un thread para escuchar al cliente
             cc = threading.Thread(target=self.escuchar, args=(cliente,))
             cc.daemon = True
@@ -49,12 +50,12 @@ class Server:
             if packet:
                 data = packet.decode('utf-8')
                 estado = self.responder(client, estado, data)
-                print(f'estado: {estado}')
+                printlog(f'estado: {estado}', False)
                 if estado == 3:
                     client.close()
-                    print('Se cerro la conexion')
+                    printlog(f'Se cerro la conexion con el cliente {client}')
                     self._lst_clientes.remove(client)
-                    print('Se quito al cliente de la lista')
+                    printlog('Se quito al cliente de la lista', False)
                     return
 
     def responder(self, cliente, estado, data):
@@ -62,13 +63,13 @@ class Server:
         opcion = ''
         nombre = str(data[:10]).strip()
         mensaje = data[10:]
-        print(str(nombre).rstrip() + ': ' + str(mensaje))
+        printlog(str(nombre).rstrip() + ': ' + str(mensaje))
         if estado == 0:     # estado=0 muestro el menu principal
             respuesta = self.menu_especialidades()
             estado += 1
         elif estado == 1:   # estado=1 elige la especialidad
             opcion = int(mensaje)
-            print(especialidades_dict.keys())
+            printlog(especialidades_dict.keys())
             if opcion in especialidades_dict.keys():
                 self.especialidad = especialidades_dict[opcion]
                 respuesta = self.menu_turnos()

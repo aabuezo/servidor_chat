@@ -22,6 +22,8 @@ turnos_dict = {
     5: 'Viernes'
 }
 
+turnos_disponibles = {}
+
 
 class TablaBase(Model):
     timestamp = DateTimeField(default=datetime.now)
@@ -48,6 +50,7 @@ class TurnoDisponible(TablaBase):
         pass
 
 
+
 class NuevoTurno(TablaBase):
     paciente = ForeignKeyField(Paciente, backref='paciente_id')
     especialidad = ForeignKeyField(Especialidad, backref='especialidad_id')
@@ -71,6 +74,11 @@ def crear_turno(turno):
         turno.save()
 
 
+def test_turnos():
+    t = TurnoDisponible()
+    t.get_turnos_disponibles()
+
+
 def crear_database():
     base = base_turnos
     print("abriendo la conexion a la base de datos")
@@ -85,5 +93,5 @@ def crear_database():
 
 
 if __name__ == '__main__':
-    crear_database()
-    # nuevo_turno = NuevoTurno(paciente='Alejandro', especialidad=especialidades_dict['2'], turno=turnos_dict['1'])
+    # crear_database()
+    test_turnos()
