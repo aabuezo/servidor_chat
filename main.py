@@ -1,3 +1,7 @@
+"""
+    Autor: Alejandro A. Buezo
+    Ultima modificación: 20-11-2021
+"""
 import os
 from controlador.controlador import Server
 from modelo.datos_base import DATABASE_FILE

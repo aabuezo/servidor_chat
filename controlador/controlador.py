@@ -1,12 +1,20 @@
+"""
+    Autor: Alejandro A. Buezo
+    Ultima modificación: 20-11-2021
+"""
 import socket
 import sys
 import threading
-from modelo.modelo import especialidades_dict, turnos_dict, TurnoDisponible, Especialidad, NuevoTurno, Paciente
 from decoradores import printlog
+from modelo.modelo import TurnoDisponible, Especialidad, NuevoTurno, Paciente
 
 
 class Server:
+    """ clase Server que maneja la conexion con los clientes """
+
     def __init__(self, host='localhost', port=6003, cn=10):
+        """ servidor de turnos """
+
         self.nombre = 'Clínica   '
         self._lst_clientes = []
         self.turno = ''
@@ -14,12 +22,14 @@ class Server:
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.bind( (host, port))
         self._sock.listen(cn)
-        self._serve = threading.Thread(target=self.atender)
-        self._serve.daemon = True
-        self._serve.start()
+        self._atender = threading.Thread(target=self.atender)
+        self._atender.daemon = True
+        self._atender.start()
         self.consola()
 
     def consola(self):
+        """ consola del servidor """
+
         while True:
             print('Ingrese "salir" para finalizar.\n')
             command = input('-> ')
@@ -32,27 +42,30 @@ class Server:
                 sys.exit()
 
     def atender(self):
-        printlog('Esperando conexiones entrantes...')
+        """ metodo para atender las conexiones entrantes """
+
+        printlog('Esperando conexiones entrantes...\n')
         print('\n')
         while True:
             cliente, addr = self._sock.accept()
             self._lst_clientes.append(cliente)
             printlog(f'cliente conectado desde: {addr}')
-            printlog(cliente)
+            printlog(cliente, False)
             # un thread para escuchar al cliente
             cc = threading.Thread(target=self.escuchar, args=(cliente,))
             cc.daemon = True
             cc.start()
 
     def escuchar(self, client):
-        estado = 0
+        """ metodo para escuchar a cada conexion establecida """
+
+        estado = 0  # estado=0 conexión recien establecida
         while True:
             packet = client.recv(1024)
             if packet:
                 data = packet.decode('utf-8')
                 estado = self.responder(client, estado, data)
-                printlog(f'estado: {estado}', False)
-                if estado == 3:
+                if estado == 3: # estado=3 ya se otorgo el turno
                     client.close()
                     printlog(f'Se cerro la conexion con el cliente {client}')
                     self._lst_clientes.remove(client)
@@ -60,10 +73,13 @@ class Server:
                     return
 
     def responder(self, cliente, estado, data):
+        """ metodo para responder a cada conexión establecida """
+
         respuesta = ''
-        nombre = str(data[:10]).strip()
+        nombre = str(data[:10]).strip() # la longitud del nombre se establece en 10 caracteres
         mensaje = data[10:]
         printlog(str(nombre).rstrip() + ': ' + str(mensaje))
+
         if estado == 0:     # estado=0 muestra el menu principal
             respuesta = self.menu_especialidades()
             estado += 1
@@ -78,6 +94,8 @@ class Server:
         return estado
 
     def menu_especialidades(self):
+        """ arma el menu de especialidades para el cliente """
+
         especialidades = Especialidad()
         menu = 'Bienvenido al sistema de turnos_dict\n'
         menu += 'Por favor, elija el número de opcion que desea:\n'
@@ -85,12 +103,16 @@ class Server:
         return menu
 
     def menu_turnos(self):
+        """ arma el menu de turnos disponibles para el cliente """
+
         turnos = TurnoDisponible()
         menu = 'Elija su turno:\n'
         menu += turnos.get_turnos_disponibles()
         return menu
 
     def elegir_especialidad(self, estado, opcion):
+        """ valida y guarda la eleccion de la especialidad elegida por el cliente """
+
         esp = Especialidad()
         esp_ids = esp.get_lista_ids()
         printlog(esp_ids)
@@ -103,6 +125,8 @@ class Server:
         return (estado, respuesta)
 
     def elegir_turno(self, estado, opcion, nombre):
+        """ valida el turno elegido por el cliente y lo reserva """
+
         td = TurnoDisponible()
         turnos_ids = td.get_lista_ids()
         printlog(turnos_ids)
@@ -121,6 +145,8 @@ class Server:
         return (estado, respuesta)
 
     def reservar_turno(self, nombre):
+        """ reserva el turno elegido por el cliente """
+
         esp = Especialidad()
         pac = Paciente()
         tur = TurnoDisponible()
@@ -132,6 +158,8 @@ class Server:
         return True
 
     def enviar_respuesta(self, cliente, respuesta):
+        """ envia la respuesta al cliente """
+
         data = self.nombre + respuesta
         packet = data.encode('utf-8')
         cliente.send(packet)
