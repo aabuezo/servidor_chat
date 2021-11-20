@@ -12,7 +12,14 @@ DATABASE = SqliteDatabase(DATABASE_FILE)
 
 
 # datos para la carga inicial
-LISTA_PACIENTES = ['Alejandro', 'Leonardo', 'Luis', 'Daniel', 'Christian', 'Juan']
+LISTA_PACIENTES = [
+    'Alejandro',
+    'Leonardo',
+    'Luis',
+    'Daniel',
+    'Christian',
+    'Juan'
+]
 LISTA_ESPECIALIDADES = [
     'Obstetricia',
     'Oftalmologia',
