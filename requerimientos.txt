@@ -3,3 +3,5 @@ crear carpeta: database
 crear carpeta: logfiles
 
 ejecutar con: python main.py
+
+para terminar: escribir 'salir' [ENTER] (sin comillas)
