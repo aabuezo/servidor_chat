@@ -30,16 +30,14 @@ class Especialidad(TablaBase):
 
     def get_lista_especialidades(self):
         """ obtiene la lista de especialidades disponibles """
-
         query = Especialidad().select()
-        especialidades = ''
-        for registro in query:
+        especialidades = '' # habia usado un dict, pero como esto viaja al cliente como texto
+        for registro in query:  # es mejor armarlo directamente de esta forma
             especialidades += f'{registro.id}. {registro.especialidad}\n'
         return especialidades
 
     def get_lista_ids(self):
         """ devuelve una lista con los id de las especialidades """
-
         query = Especialidad().select()
         lst_esp = []
         for registro in query:
@@ -62,7 +60,7 @@ class TurnoDisponible(TablaBase):
 
     def get_turnos_disponibles(self):
         """ devuelve un string con los turnos disponibles en la BD
-            (que aún no se otorgaron) """
+            (los turnos que aún no se otorgaron) """
         query = TurnoDisponible().select().where(TurnoDisponible.disponible==True)
         turnos = ''
         for registro in query:
@@ -70,7 +68,7 @@ class TurnoDisponible(TablaBase):
         return turnos
 
     def get_lista_ids(self):
-        """ obtiene la lisa de id de los turnos disponibles en la BD """
+        """ obtiene la lista de id de los turnos disponibles en la BD """
         query = TurnoDisponible().select().where(TurnoDisponible.disponible == True)
         lst_turnos = []
         for registro in query:
@@ -88,16 +86,13 @@ class TurnoDisponible(TablaBase):
 
 class NuevoTurno(TablaBase):
     """ clase que representa un turno otorgado y guardado en la BD """
-
     paciente = ForeignKeyField(Paciente, backref='paciente_id')
     especialidad = ForeignKeyField(Especialidad, backref='especialidad_id')
     turno = ForeignKeyField(TurnoDisponible, backref='turno_id')
 
     def guardar_turno(self, nombre_id, especialidad_id, turno_id):
-        """ reserva el turno en la BD y marca como ya no disponible para otros el turno otorgado """
-
+        """ reserva el turno en la BD y marca el turno otorgado como no disponible para otros """
         nt = NuevoTurno.create(paciente=nombre_id, especialidad=especialidad_id, turno=turno_id)
-        # td = TurnoDisponible()
         query = TurnoDisponible.update(disponible=False).where(TurnoDisponible.id == turno_id)
         printlog(query)
         query.execute()
@@ -105,7 +100,6 @@ class NuevoTurno(TablaBase):
 
 def carga_inicial_datos():
     """ funcion para la carga inicial de datos en la BD """
-
     with DATABASE.atomic():
         for value in LISTA_PACIENTES:
             Paciente.create(paciente=value).save()
@@ -117,7 +111,6 @@ def carga_inicial_datos():
 
 def crear_database():
     """ funcion para crear la BD y las tablas """
-
     with DATABASE:
         printlog("conectado a la base de datos", False)
         DATABASE.create_tables([Paciente, Especialidad, TurnoDisponible, NuevoTurno])
