@@ -8,14 +8,19 @@ import threading
 from decoradores import printlog
 from modelo.modelo import TurnoDisponible, Especialidad, NuevoTurno, Paciente
 
+# si el servidor se ejecuta en otra maquina, recordar cambiar por la IP del servidor entre comillas 
+# recordar habilitar el PORT en el firewall del servidor
+HOST = 'localhost'
+PORT = 3000
+
 
 class Server:
     """ clase Server que maneja la conexion con los clientes """
 
-    def __init__(self, host='localhost', port=6003, cn=10):
+    def __init__(self, host=HOST, port=PORT, cn=5):
         """ servidor de turnos """
 
-        self.nombre = 'Clínica   '
+        self.nombre = 'Clínica   '  # el que responde a los clientes
         self._lst_clientes = []
         self.turno = ''
         self.especialidad = ''
@@ -34,9 +39,9 @@ class Server:
             print('Ingrese "salir" para finalizar.\n')
             command = input('-> ')
             if command.lower() == 'salir':
+                printlog('Apagando el servidor...\n', True)
                 if len(self._lst_clientes) > 0: # si hay clientes activos
                     for c in self._lst_clientes:
-                        printlog(c, False)  # no imprime a la pantalla, pero si al log.txt
                         printlog(f'cerrando la conexion con el cliente {c}')
                         c.close()
                 sys.exit()
@@ -51,7 +56,7 @@ class Server:
             self._lst_clientes.append(cliente)
             printlog(f'cliente conectado desde: {addr}')
             printlog(cliente, False)
-            # un thread para escuchar al cliente
+            # un nuevo thread para escuchar al cliente que se acaba de conectar
             cc = threading.Thread(target=self.escuchar, args=(cliente,))
             cc.daemon = True
             cc.start()
@@ -65,7 +70,7 @@ class Server:
             if packet:
                 data = packet.decode('utf-8')
                 estado = self.responder(client, estado, data)
-                if estado == 3: # estado=3 ya se otorgo el turno
+                if estado == 3: # estado=3 ya se otorgo el turno, cerrar la conexion con el cliente
                     client.close()
                     printlog(f'Se cerro la conexion con el cliente {client}')
                     self._lst_clientes.remove(client)
@@ -97,7 +102,7 @@ class Server:
         """ arma el menu de especialidades para el cliente """
 
         especialidades = Especialidad()
-        menu = 'Bienvenido al sistema de turnos_dict\n'
+        menu = 'Bienvenido al sistema de turnos!\n'
         menu += 'Por favor, elija el número de opcion que desea:\n'
         menu += especialidades.get_lista_especialidades()
         return menu
@@ -111,7 +116,7 @@ class Server:
         return menu
 
     def elegir_especialidad(self, estado, opcion):
-        """ valida y guarda la eleccion de la especialidad elegida por el cliente """
+        """ valida y guarda la eleccion de la especialidad elegida por el paciente """
 
         esp = Especialidad()
         esp_ids = esp.get_lista_ids()
@@ -162,7 +167,12 @@ class Server:
 
         data = self.nombre + respuesta
         packet = data.encode('utf-8')
-        cliente.send(packet)
+        try:
+            cliente.send(packet)
+        except socket.error:
+            # aunque se  pedio la conexion con el cliente,
+            # el turno ya se reservo, por eso no hacemos rollback
+            pass
 
 
 if __name__ == '__main__':
