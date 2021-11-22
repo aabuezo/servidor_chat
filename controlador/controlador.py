@@ -11,7 +11,7 @@ from modelo.modelo import TurnoDisponible, Especialidad, NuevoTurno, Paciente
 # si el servidor se ejecuta en otra maquina, recordar cambiar por la IP del servidor entre comillas 
 # recordar habilitar el PORT en el firewall del servidor
 HOST = 'localhost'
-PORT = 3000
+PORT = 3013
 
 
 class Server:
@@ -20,10 +20,13 @@ class Server:
     def __init__(self, host=HOST, port=PORT, cn=5):
         """ servidor de turnos """
 
-        self.nombre = 'Clínica   '  # el que responde a los clientes
-        self._lst_clientes = []
-        self.turno = ''
+        self.INICIO = 0
+        self.ELIGE_ESPECIALIDAD = 1
+        self.ELIGE_TURNO = 2
+        self.FIN = 3
         self.especialidad = ''
+        self.nombre = 'Clínica   '  # nombre con que responde a los clientes
+        self._lst_clientes = []
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.bind( (host, port))
         self._sock.listen(cn)
@@ -64,13 +67,13 @@ class Server:
     def escuchar(self, client):
         """ metodo para escuchar a cada conexion establecida """
 
-        estado = 0  # estado=0 conexión recien establecida
+        estado = self.INICIO
         while True:
             packet = client.recv(1024)
             if packet:
                 data = packet.decode('utf-8')
                 estado = self.responder(client, estado, data)
-                if estado == 3: # estado=3 ya se otorgo el turno, cerrar la conexion con el cliente
+                if estado == self.FIN:
                     client.close()
                     printlog(f'Se cerro la conexion con el cliente {client}')
                     self._lst_clientes.remove(client)
@@ -81,18 +84,25 @@ class Server:
         """ metodo para responder a cada conexión establecida """
 
         respuesta = ''
+        # opcion = 0
         nombre = str(data[:10]).strip() # la longitud del nombre se establece en 10 caracteres
         mensaje = data[10:]
         printlog(str(nombre).rstrip() + ': ' + str(mensaje))
 
-        if estado == 0:     # estado=0 muestra el menu principal
+        if estado == self.INICIO:
             respuesta = self.menu_especialidades()
-            estado += 1
-        elif estado == 1:   # estado=1 elige la especialidad
-            opcion = int(mensaje)
-            estado, respuesta = self.elegir_especialidad(estado, opcion)
-        elif estado == 2:   # estado=2 elige el turno
-            opcion = int(mensaje)
+            estado = self.ELIGE_ESPECIALIDAD
+        elif estado == self.ELIGE_ESPECIALIDAD:
+            try:
+                opcion = int(mensaje)
+            except ValueError:
+                opcion = 0
+            estado, respuesta= self.elegir_especialidad(estado, opcion)
+        elif estado == self.ELIGE_TURNO:
+            try:
+                opcion = int(mensaje)
+            except ValueError:
+                opcion = 0
             estado, respuesta = self.elegir_turno(estado, opcion, nombre)
 
         self.enviar_respuesta(cliente, respuesta)
@@ -121,13 +131,13 @@ class Server:
         esp = Especialidad()
         esp_ids = esp.get_lista_ids()
         printlog(esp_ids)
-        if opcion in esp_ids:
+        if estado == self.ELIGE_ESPECIALIDAD and opcion in esp_ids:
             self.especialidad = esp.get_especialidad(opcion)
             respuesta = self.menu_turnos()
-            estado += 1
+            estado = self.ELIGE_TURNO
         else:
             respuesta = 'Opción inválida.\nIngrese su opcion nuevamente'
-        return (estado, respuesta)
+        return estado, respuesta
 
     def elegir_turno(self, estado, opcion, nombre):
         """ valida el turno elegido por el cliente y lo reserva """
@@ -135,29 +145,31 @@ class Server:
         td = TurnoDisponible()
         turnos_ids = td.get_lista_ids()
         printlog(turnos_ids)
-        if opcion in turnos_ids:
-            self.turno = td.get_turno(opcion)
-            if self.reservar_turno(nombre) == True:
+        if estado == self.ELIGE_TURNO and opcion in turnos_ids:
+            turno = td.get_turno(opcion)
+            if self.reservar_turno(nombre, turno):
                 respuesta = f'Le confirmamos su turno:\n' \
                             + f'Paciente: {nombre}\n' \
                             + f'Especialidad: {self.especialidad}\n' \
-                            + f'Dia: {self.turno}\n\nLo esperamos!'
-                estado += 1
+                            + f'Dia: {turno}\n\nLo esperamos!'
+                estado = self.FIN
             else:
-                respuesta = f'El turno ya no esta disponible'
+                respuesta = f'No es posible reservar el turno.\n' \
+                            + 'Comuníquese nuevamente'
         else:
             respuesta = 'Opción inválida.\nIngrese su opcion nuevamente'
         return (estado, respuesta)
 
-    def reservar_turno(self, nombre):
+    def reservar_turno(self, nombre, turno):
         """ reserva el turno elegido por el cliente """
-
+        if self.especialidad == '':
+            return False
         esp = Especialidad()
         pac = Paciente()
         tur = TurnoDisponible()
         nombre_id = pac.get_id(nombre)
         esp_id = esp.get_id(self.especialidad)
-        turno_id = tur.get_id(self.turno)
+        turno_id = tur.get_id(turno)
         nt = NuevoTurno()
         nt.guardar_turno(nombre_id, esp_id, turno_id)
         return True
