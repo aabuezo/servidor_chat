@@ -145,7 +145,11 @@ class Server:
         td = TurnoDisponible()
         turnos_ids = td.get_lista_ids()
         printlog(turnos_ids)
-        if estado == self.ELIGE_TURNO and opcion in turnos_ids:
+        if len(turnos_ids) == 0:    # no hay mas turnos disponibles
+            respuesta = 'Lamento comunicarle que no hay mas turnos disponibles.\n' \
+            'Por favor vuelva a comunicarse en otro momento.\n'
+            estado = self.FIN
+        elif estado == self.ELIGE_TURNO and opcion in turnos_ids:
             turno = td.get_turno(opcion)
             if self.reservar_turno(nombre, turno):
                 respuesta = f'Le confirmamos su turno:\n' \
