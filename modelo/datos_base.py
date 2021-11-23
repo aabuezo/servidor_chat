@@ -1,6 +1,7 @@
 """
-    Autor: Alejandro A. Buezo
-    Ultima modificación: 20-11-2021
+    Servidor Chat-Bot
+    Archivo: datos_base.py
+    Ultima modificación: 23-11-2021
 """
 # datos de la base de datos
 

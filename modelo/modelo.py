@@ -1,6 +1,7 @@
 """
-    Autor: Alejandro A. Buezo
-    Ultima modificación: 20-11-2021
+    Servidor Chat-Bot
+    Archivo: modelo.py
+    Ultima modificación: 23-11-2021
 """
 from modelo.datos_base import DATABASE, LISTA_PACIENTES, LISTA_ESPECIALIDADES, LISTA_DIAS_TURNOS
 from peewee import DateTimeField, Model, CharField, ForeignKeyField, BooleanField
@@ -12,6 +13,7 @@ class TablaBase(Model):
     """ contiene el timestamp y la class Meta para
         todas las subclases """
     timestamp = DateTimeField(default=datetime.now)
+
     class Meta:
         database = DATABASE
 
@@ -31,7 +33,7 @@ class Especialidad(TablaBase):
     def get_lista_especialidades(self):
         """ obtiene la lista de especialidades disponibles """
         query = Especialidad().select()
-        especialidades = '' # habia usado un dict, pero como esto viaja al cliente como texto
+        especialidades = ''     # habia usado un dict, pero como esto viaja al cliente como texto
         for registro in query:  # es mejor armarlo directamente de esta forma
             especialidades += f'{registro.id}. {registro.especialidad}\n'
         return especialidades
@@ -44,9 +46,9 @@ class Especialidad(TablaBase):
             lst_esp.append(registro.id)
         return lst_esp
 
-    def get_especialidad(self, id):
+    def get_especialidad(self, esp_id):
         """ obtiene una especialidad a partir de un id"""
-        return Especialidad.get_by_id(id).especialidad
+        return Especialidad.get_by_id(esp_id).especialidad
 
     def get_id(self, esp):
         """ obtiene un id a partir de una especialidad """
@@ -61,7 +63,7 @@ class TurnoDisponible(TablaBase):
     def get_turnos_disponibles(self):
         """ devuelve un string con los turnos disponibles en la BD
             (los turnos que aún no se otorgaron) """
-        query = TurnoDisponible().select().where(TurnoDisponible.disponible==True)
+        query = TurnoDisponible().select().where(TurnoDisponible.disponible == True)
         turnos = ''
         for registro in query:
             turnos += f'{registro.id}. {registro.turno}\n'
@@ -75,9 +77,9 @@ class TurnoDisponible(TablaBase):
             lst_turnos.append(registro.id)
         return lst_turnos
 
-    def get_turno(self, id):
+    def get_turno(self, turno_id):
         """ devuelve el dia correspondiente al id """
-        return TurnoDisponible.get_by_id(id).turno
+        return TurnoDisponible.get_by_id(turno_id).turno
 
     def get_id(self, dia):
         """ devuelve el id según el día """
@@ -122,5 +124,3 @@ def crear_database():
 if __name__ == '__main__':
     """ ejecutar desde main.py """
     pass
-
-

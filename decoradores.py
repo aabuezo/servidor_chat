@@ -1,6 +1,7 @@
 """
-    Autor: Alejandro A. Buezo
-    Ultima modificación: 20-11-2021
+    Servidor Chat-Bot
+    Archivo: decoradores.py
+    Ultima modificación: 23-11-2021
 """
 # decorador para guardar a archivo los logs
 
@@ -18,5 +19,3 @@ def log_to_file(funcion):
 def printlog(info, to_screen=True):
     if to_screen:
         print(str(info))
-
-
